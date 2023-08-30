@@ -1,0 +1,30 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/hmac.h>
+void handleErrors() {
+    perror("An error occurred");
+    exit(1);
+}
+int main() {
+    // Secret key for HMAC
+    const char *key = "mysecretpassword";
+    size_t key_len = strlen(key);
+    // Message to authenticate
+    const unsigned char *message = (const unsigned char *)"Hello, this is the message to authenticate.";
+    size_t message_len = strlen((const char *)message);
+    // Allocate memory for the HMAC result
+    unsigned char hmac_result[EVP_MAX_MD_SIZE];
+    unsigned int hmac_result_len;
+    // Calculate HMAC
+    if (HMAC(EVP_sha256(), key, key_len, message, message_len, hmac_result, &hmac_result_len) == NULL) {
+        handleErrors();
+    }
+    // Print the HMAC result
+    printf("HMAC result: ");
+    for (unsigned int i = 0; i < hmac_result_len; ++i) {
+        printf("%02x", hmac_result[i]);
+    }
+    printf("\n");
+    return 0;
+}
