@@ -1,0 +1,134 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define SIZE 5
+
+// Function to remove spaces and duplicate letters from the key
+void sanitizeKey(char *key) {
+    int i, j, k = 0;
+    char temp[SIZE * SIZE], unique[26] = {0};
+
+    for (i = 0; key[i] != '\0'; i++) {
+        if (isalpha(key[i])) {
+            key[i] = toupper(key[i]);
+            if (!unique[key[i] - 'A']) {
+                temp[k++] = key[i];
+                unique[key[i] - 'A'] = 1;
+            }
+        }
+    }
+
+    for (i = 0; i < 26; i++) {
+        if (i != 'J' - 'A' && !unique[i]) {
+            temp[k++] = i + 'A';
+        }
+    }
+
+    temp[k] = '\0';
+    strcpy(key, temp);
+}
+
+// Function to generate the Playfair matrix from the key
+void generateMatrix(char matrix[SIZE][SIZE], char *key) {
+    int i, j, k = 0;
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            matrix[i][j] = key[k++];
+        }
+    }
+}
+
+// Function to find the row and column of a character in the Playfair matrix
+void findRowCol(char matrix[SIZE][SIZE], char ch, int *row, int *col) {
+    int i, j;
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            if (matrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+// Function to encrypt a digraph using the Playfair cipher
+void encryptDigraph(char matrix[SIZE][SIZE], char *digraph, char *cipher) {
+    int row1, col1, row2, col2;
+    findRowCol(matrix, digraph[0], &row1, &col1);
+    findRowCol(matrix, digraph[1], &row2, &col2);
+
+    if (row1 == row2) {
+        cipher[0] = matrix[row1][(col1 + 1) % SIZE];
+        cipher[1] = matrix[row2][(col2 + 1) % SIZE];
+    } else if (col1 == col2) {
+        cipher[0] = matrix[(row1 + 1) % SIZE][col1];
+        cipher[1] = matrix[(row2 + 1) % SIZE][col2];
+    } else {
+        cipher[0] = matrix[row1][col2];
+        cipher[1] = matrix[row2][col1];
+    }
+}
+
+// Function to decrypt a digraph using the Playfair cipher
+void decryptDigraph(char matrix[SIZE][SIZE], char *cipher, char *digraph) {
+    int row1, col1, row2, col2;
+    findRowCol(matrix, cipher[0], &row1, &col1);
+    findRowCol(matrix, cipher[1], &row2, &col2);
+
+    if (row1 == row2) {
+        digraph[0] = matrix[row1][(col1 - 1 + SIZE) % SIZE];
+        digraph[1] = matrix[row2][(col2 - 1 + SIZE) % SIZE];
+    } else if (col1 == col2) {
+        digraph[0] = matrix[(row1 - 1 + SIZE) % SIZE][col1];
+        digraph[1] = matrix[(row2 - 1 + SIZE) % SIZE][col2];
+    } else {
+        digraph[0] = matrix[row1][col2];
+        digraph[1] = matrix[row2][col1];
+    }
+}
+
+int main() {
+    char key[26], matrix[SIZE][SIZE], plaintext[100], digraph[2], cipher[2];
+    int i, j, len;
+
+    printf("Enter the key (no spaces, all uppercase, omit 'J'): ");
+    scanf("%s", key);
+
+    sanitizeKey(key);
+    generateMatrix(matrix, key);
+
+    printf("Enter the plaintext: ");
+    scanf("%s", plaintext);
+
+    len = strlen(plaintext);
+    if (len % 2 != 0) {
+        plaintext[len] = 'X';
+        plaintext[len + 1] = '\0';
+    }
+
+    printf("Encrypted cipher: ");
+    for (i = 0; i < len; i += 2) {
+        digraph[0] = plaintext[i];
+        digraph[1] = plaintext[i + 1];
+
+        encryptDigraph(matrix, digraph, cipher);
+
+        printf("%c%c", cipher[0], cipher[1]);
+    }
+    printf("\n");
+
+    printf("Decrypted plaintext: ");
+    for (i = 0; i < len; i += 2) {
+        cipher[0] = plaintext[i];
+        cipher[1] = plaintext[i + 1];
+
+        decryptDigraph(matrix, cipher, digraph);
+
+        printf("%c%c", digraph[0], digraph[1]);
+    }
+    printf("\n");
+
+    return 0;
+}
